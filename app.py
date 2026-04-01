@@ -7,7 +7,8 @@ app = Flask(__name__)
 app.secret_key = "library_secret_key"
 
 # ── Replace this with your actual Atlas URI ──────────────────────────────────
-MONGO_URI = "mongodb+srv://youruser:yourpassword@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority"
+MONGO_URI = mongodb+srv://sajithsid2006_db_user:YSSiXshWMAZu7XWI@cluster0.hp6qqdn.mongodb.net/?appName=Cluster0
+
 # ─────────────────────────────────────────────────────────────────────────────
 
 client = MongoClient(MONGO_URI)
