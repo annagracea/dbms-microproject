@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LibraTrack — Library Book Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:       #1a1a2e;
+      --ink-light: #3a3a5c;
+      --paper:     #faf8f4;
+      --cream:     #f2ede4;
+      --gold:      #c9a84c;
+      --gold-lt:   #f0e0a8;
+      --green:     #2d6a4f;
+      --green-lt:  #d8f3dc;
+      --red:       #c1121f;
+      --red-lt:    #fde8e8;
+      --blue:      #1d4e89;
+      --blue-lt:   #dce9f5;
+      --shadow:    0 2px 16px rgba(26,26,46,0.10);
+      --radius:    12px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--ink);
+      color: #fff;
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.25);
+    }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo span { color: var(--gold); }
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: var(--gold);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .btn-add {
+      background: var(--gold);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 0.9rem;
+      padding: 10px 22px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .btn-add:hover { background: #e0b84e; transform: translateY(-1px); }
+
+    /* ── Main layout ── */
+    main { max-width: 1100px; margin: 0 auto; padding: 36px 24px; }
+
+    /* ── Flash messages ── */
+    .flash-box {
+      padding: 13px 18px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+      animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
+    .flash-success { background: var(--green-lt); color: var(--green); border-left: 4px solid var(--green); }
+    .flash-error   { background: var(--red-lt);   color: var(--red);   border-left: 4px solid var(--red); }
+    .flash-info    { background: var(--blue-lt);   color: var(--blue);  border-left: 4px solid var(--blue); }
+
+    /* ── Stats row ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      box-shadow: var(--shadow);
+      border-top: 4px solid transparent;
+      display: flex; align-items: center; gap: 16px;
+      transition: transform 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); }
+    .stat-card.total  { border-color: var(--gold); }
+    .stat-card.avail  { border-color: var(--green); }
+    .stat-card.issued { border-color: var(--red); }
+    .stat-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .total  .stat-icon { background: #fdf3d8; }
+    .avail  .stat-icon { background: var(--green-lt); }
+    .issued .stat-icon { background: var(--red-lt); }
+    .stat-num  { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; line-height: 1; }
+    .stat-label { font-size: 0.8rem; color: var(--ink-light); margin-top: 2px; }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-wrap {
+      flex: 1; min-width: 200px;
+      position: relative;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 11px 16px 11px 42px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      background: #fff;
+      transition: border-color 0.2s;
+    }
+    .search-wrap input:focus { outline: none; border-color: var(--gold); }
+    .search-icon {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: #aaa; font-size: 16px; pointer-events: none;
+    }
+    .filter-tabs { display: flex; gap: 6px; }
+    .filter-tab {
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: 1.5px solid #ddd;
+      background: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--ink-light);
+      transition: all 0.2s;
+    }
+    .filter-tab:hover, .filter-tab.active { border-color: var(--gold); background: var(--gold-lt); color: var(--ink); }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--ink); }
+    thead th {
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 14px 18px;
+      text-align: left;
+    }
+    tbody tr {
+      border-bottom: 1px solid #f0ece4;
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #fdf8f0; }
+    td {
+      padding: 15px 18px;
+      font-size: 0.9rem;
+      vertical-align: middle;
+    }
+    .book-title { font-weight: 500; color: var(--ink); }
+    .book-author { color: var(--ink-light); font-size: 0.82rem; margin-top: 2px; }
+    .genre-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      background: var(--cream);
+      color: var(--ink-light);
+    }
+
+    /* ── Status badge ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 0.78rem; font-weight: 500;
+    }
+    .badge.available { background: var(--green-lt); color: var(--green); }
+    .badge.issued    { background: var(--red-lt);   color: var(--red); }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    /* ── Action buttons ── */
+    .actions { display: flex; gap: 8px; }
+    .btn {
+      padding: 7px 14px; border-radius: 7px;
+      font-size: 0.8rem; font-weight: 500;
+      text-decoration: none; border: none; cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-issue  { background: var(--red-lt);   color: var(--red); }
+    .btn-return { background: var(--green-lt); color: var(--green); }
+    .btn-delete { background: #f0ece4; color: #888; }
+    .btn-delete:hover { background: var(--red-lt); color: var(--red); opacity: 1; }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--ink-light);
+    }
+    .empty-icon { font-size: 52px; margin-bottom: 16px; }
+    .empty h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 8px; color: var(--ink); }
+    .empty p { font-size: 0.9rem; margin-bottom: 24px; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 28px;
+      font-size: 0.8rem;
+      color: #aaa;
+      border-top: 1px solid #eee;
+      margin-top: 40px;
+    }
+
+    @media (max-width: 640px) {
+      header { padding: 0 16px; }
+      .stats { grid-template-columns: 1fr; }
+      .controls { flex-direction: column; }
+      table { font-size: 0.8rem; }
+      td, th { padding: 10px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📚</div>
+    Libra<span>Track</span>
+  </div>
+  <a href="/add" class="btn-add">＋ Add Book</a>
+</header>
+
+<main>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash-box flash-{{ category }}">
+        {% if category == 'success' %}✅{% elif category == 'error' %}❌{% else %}ℹ️{% endif %}
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card total">
+      <div class="stat-icon">📦</div>
+      <div>
+        <div class="stat-num">{{ stats.total }}</div>
+        <div class="stat-label">Total Books</div>
+      </div>
+    </div>
+    <div class="stat-card avail">
+      <div class="stat-icon">✅</div>
+      <div>
+        <div class="stat-num">{{ stats.available }}</div>
+        <div class="stat-label">Available</div>
+      </div>
+    </div>
+    <div class="stat-card issued">
+      <div class="stat-icon">📤</div>
+      <div>
+        <div class="stat-num">{{ stats.issued }}</div>
+        <div class="stat-label">Issued</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <form class="controls" method="GET" action="/">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" name="q" placeholder="Search by title, author or ISBN…" value="{{ query }}"/>
+    </div>
+    <div class="filter-tabs">
+      <a href="/?filter=all{% if query %}&q={{ query }}{% endif %}"
+         class="filter-tab {% if filter_status == 'all' %}active{% endif %}">All</a>
+      <a href="/?filter=available{% if query %}&q={{ query }}{% endif %}"
+         class="filter-tab {% if filter_status == 'available' %}active{% endif %}">Available</a>
+      <a href="/?filter=issued{% if query %}&q={{ query }}{% endif %}"
+         class="filter-tab {% if filter_status == 'issued' %}active{% endif %}">Issued</a>
+    </div>
+    <button type="submit" class="btn" style="background:var(--gold);color:var(--ink);padding:10px 18px;">Search</button>
+  </form>
+
+  <!-- Books table -->
+  <div class="table-wrap">
+    {% if books %}
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Book</th>
+          <th>ISBN</th>
+          <th>Genre</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for book in books %}
+        <tr>
+          <td style="color:#bbb;font-size:0.8rem;">{{ loop.index }}</td>
+          <td>
+            <div class="book-title">{{ book.title }}</div>
+            <div class="book-author">by {{ book.author }}</div>
+          </td>
+          <td style="font-family:monospace;font-size:0.82rem;color:var(--ink-light);">{{ book.isbn }}</td>
+          <td>
+            {% if book.genre %}
+              <span class="genre-badge">{{ book.genre }}</span>
+            {% else %}
+              <span style="color:#ccc;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge {{ book.status }}">
+              <span class="badge-dot"></span>
+              {{ book.status | capitalize }}
+            </span>
+          </td>
+          <td>
+            <div class="actions">
+              {% if book.status == "available" %}
+                <a href="/issue/{{ book.isbn }}" class="btn btn-issue">📤 Issue</a>
+              {% else %}
+                <a href="/return/{{ book.isbn }}" class="btn btn-return">📥 Return</a>
+              {% endif %}
+              <a href="/delete/{{ book.isbn }}" class="btn btn-delete"
+                 onclick="return confirm('Delete \'{{ book.title }}\'?')">🗑</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+      <div class="empty-icon">📭</div>
+      <h3>No books found</h3>
+      <p>{% if query %}No results for "{{ query }}". Try a different search.{% else %}Your library is empty. Add the first book!{% endif %}</p>
+      <a href="/add" class="btn" style="background:var(--gold);color:var(--ink);padding:12px 24px;font-size:0.9rem;">＋ Add First Book</a>
+    </div>
+    {% endif %}
+  </div>
+
+</main>
+
+<footer>LibraTrack &nbsp;·&nbsp; DBMS Microproject &nbsp;·&nbsp; Flask + MongoDB</footer>
+
+</body>
+</html>
